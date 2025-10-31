@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/woodchen-ink/go-web-utils/iputil"
 )
 
 var (
@@ -184,8 +186,7 @@ func getTargetURL(r *http.Request) (string, bool) {
 	}
 
 	// 核心脚本 /ms/j/0.8.38/clarity.js
-	if strings.HasPrefix(path, "/ms/j/") {
-		scriptPath := strings.TrimPrefix(path, "/ms/j/")
+	if scriptPath, ok := strings.CutPrefix(path, "/ms/j/"); ok {
 		return clarityHosts["/ms/j/"] + scriptPath, true
 	}
 
@@ -195,8 +196,7 @@ func getTargetURL(r *http.Request) (string, bool) {
 	}
 
 	// CDN 资源 /ms/c/*
-	if strings.HasPrefix(path, "/ms/c/") {
-		cdnPath := strings.TrimPrefix(path, "/ms/c/")
+	if cdnPath, ok := strings.CutPrefix(path, "/ms/c/"); ok {
 		targetURL := clarityHosts["/ms/c/"] + cdnPath
 		if r.URL.RawQuery != "" {
 			targetURL += "?" + r.URL.RawQuery
@@ -251,16 +251,11 @@ func createProxyRequest(r *http.Request, targetURL string) (*http.Request, error
 	proxyReq.Host = parsedURL.Host
 	proxyReq.Header.Set("Host", parsedURL.Host)
 
-	// 设置真实 IP
-	if clientIP := r.Header.Get("X-Real-IP"); clientIP != "" {
+	// 获取真实客户端 IP（使用 iputil 工具库）
+	clientIP := iputil.GetClientIP(r)
+	if clientIP != "" {
 		proxyReq.Header.Set("X-Real-IP", clientIP)
-	} else if clientIP := r.RemoteAddr; clientIP != "" {
-		proxyReq.Header.Set("X-Real-IP", strings.Split(clientIP, ":")[0])
-	}
-
-	// 设置 X-Forwarded-For
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		proxyReq.Header.Set("X-Forwarded-For", xff)
+		proxyReq.Header.Set("X-Forwarded-For", clientIP)
 	}
 
 	// 设置 Referer
@@ -275,7 +270,17 @@ func createProxyRequest(r *http.Request, targetURL string) (*http.Request, error
 func handleCORS(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
 	if origin == "" {
-		origin = "*" // 如果没有 Origin，使用通配符（但不推荐）
+		// 如果没有 Origin 头,尝试从 Referer 中提取
+		if referer := r.Header.Get("Referer"); referer != "" {
+			if u, err := url.Parse(referer); err == nil {
+				origin = u.Scheme + "://" + u.Host
+			}
+		}
+	}
+
+	// 如果还是没有 origin,使用请求的 Host
+	if origin == "" {
+		origin = "https://" + r.Host
 	}
 
 	w.Header().Set("Access-Control-Allow-Origin", origin)
