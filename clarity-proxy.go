@@ -253,9 +253,29 @@ func createProxyRequest(r *http.Request, targetURL string) (*http.Request, error
 
 	// 获取真实客户端 IP（使用 iputil 工具库）
 	clientIP := iputil.GetClientIP(r)
+
+	// 记录调试信息
+	log.Printf("[IP Debug] RemoteAddr: %s", r.RemoteAddr)
+	log.Printf("[IP Debug] X-Real-IP: %s", r.Header.Get("X-Real-IP"))
+	log.Printf("[IP Debug] X-Forwarded-For: %s", r.Header.Get("X-Forwarded-For"))
+	log.Printf("[IP Debug] iputil.GetClientIP: %s", clientIP)
+
 	if clientIP != "" {
+		// 设置 X-Real-IP
 		proxyReq.Header.Set("X-Real-IP", clientIP)
-		proxyReq.Header.Set("X-Forwarded-For", clientIP)
+
+		// X-Forwarded-For 需要追加,不是覆盖
+		// 保留原有的 X-Forwarded-For,确保 IP 链完整
+		existingXFF := r.Header.Get("X-Forwarded-For")
+		if existingXFF != "" {
+			// 如果已有 X-Forwarded-For,保持原样(nginx/CDN 已经处理好了)
+			proxyReq.Header.Set("X-Forwarded-For", existingXFF)
+		} else {
+			// 如果没有,设置客户端 IP
+			proxyReq.Header.Set("X-Forwarded-For", clientIP)
+		}
+
+		log.Printf("[IP Debug] Final X-Forwarded-For: %s", proxyReq.Header.Get("X-Forwarded-For"))
 	}
 
 	// 设置 Referer
