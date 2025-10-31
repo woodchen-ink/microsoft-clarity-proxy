@@ -42,10 +42,20 @@ server {
     location /ms/ {
         proxy_pass http://127.0.0.1:8081;
         proxy_http_version 1.1;
+
+        # 传递客户端信息
         proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header Origin $http_origin;
+        proxy_set_header Referer $http_referer;
+
+        # 注意: 如果使用了 CDN (如 EdgeOne/Cloudflare)
+        # 不要手动设置 X-Real-IP 和 X-Forwarded-For
+        # 让 CDN 传递的原始头部直接传给 Go 代理
+        # CDN 会自动设置正确的客户端 IP
+
+        # 传递所有请求头和请求体
+        proxy_pass_request_headers on;
+        proxy_pass_request_body on;
 
         # 禁用缓冲和压缩,避免 HTTP/2 协议错误
         proxy_buffering off;
