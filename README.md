@@ -96,7 +96,11 @@ server {
 
         proxy_pass_request_headers on;
         proxy_pass_request_body on;
+
+        # 禁用缓冲和压缩,避免 HTTP/2 协议错误
         proxy_buffering off;
+        proxy_request_buffering off;
+        gzip off;
     }
 }
 ```

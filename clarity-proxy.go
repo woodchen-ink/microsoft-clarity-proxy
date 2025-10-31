@@ -146,11 +146,11 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	// 设置 CORS 头（完全控制，不使用上游的）
 	handleCORS(w, r)
 
-	// 复制其他响应头（排除 CORS 相关的）
+	// 复制其他响应头（排除 CORS 和 Content-Length 相关的）
 	for key, values := range resp.Header {
-		// 跳过 CORS 相关的头
+		// 跳过 CORS 相关的头和 Content-Length（因为我们可能修改了内容）
 		lowerKey := strings.ToLower(key)
-		if strings.HasPrefix(lowerKey, "access-control-") {
+		if strings.HasPrefix(lowerKey, "access-control-") || lowerKey == "content-length" {
 			continue
 		}
 		for _, value := range values {

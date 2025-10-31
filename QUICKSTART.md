@@ -46,7 +46,11 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header Origin $http_origin;
+
+        # 禁用缓冲和压缩,避免 HTTP/2 协议错误
         proxy_buffering off;
+        proxy_request_buffering off;
+        gzip off;
     }
 }
 ```
