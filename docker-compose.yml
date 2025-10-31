@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  clarity-proxy:
+    image: ghcr.io/woodchen-ink/microsoft-clarity-proxy:latest
+    container_name: clarity-proxy
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      # 必填：你的代理域名
+      - PROXY_DOMAIN=https://analytics.czl.net
+      # 可选：监听端口（默认 8081）
+      - LISTEN_PORT=8081
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - clarity-network
+
+networks:
+  clarity-network:
+    driver: bridge

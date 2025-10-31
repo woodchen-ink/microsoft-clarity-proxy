@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+!README.md
+LICENSE
+
+# Nginx configs
+nginx*.conf
+
+# Build artifacts
+clarity-proxy
+clarity-proxy.exe
+*.exe
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose*.yml
